@@ -5,6 +5,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from users.models import User, Passenger, Rider
 from rest_framework import generics, status
 from users.serializers import (
@@ -186,3 +188,22 @@ class RiderViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(rider)
         return Response(serializer.data)
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Custom token serializer to include user data"""
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data['user'] = UserSerializer(self.user).data
+        return data
+    
+class LoginView(TokenObtainPairView):
+    """API endpoint for user login"""
+    serializer_class = CustomTokenObtainPairSerializer
+
+
+    @extend_schema(
+        summary="User login",
+        description="Authenticate user and receive JWT tokens"
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
